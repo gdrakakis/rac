@@ -89,7 +89,7 @@ def getJsonTestRA (jsonInput):
         dataEntry = dataset.get("dataEntry", None)
 
         # for internal testing
-        predictionFeature "" 
+        predictionFeature = "" 
         predictedFeatures = additionalInfo[0].get("predictedFeatures", None)
 
         variables = dataEntry[0]["values"].keys() 
