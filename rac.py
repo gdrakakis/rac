@@ -84,7 +84,8 @@ def getJsonTestRA (jsonInput):
         dataset = jsonInput["dataset"]
         rawModel = jsonInput["rawModel"]
         additionalInfo = jsonInput["additionalInfo"]
-
+        predictedFeatures = jsonInput["predictedFeatures"]
+        print predictedFeatures
         datasetURI = dataset.get("datasetURI", None)
         dataEntry = dataset.get("dataEntry", None)
 
@@ -103,12 +104,12 @@ def getJsonTestRA (jsonInput):
             for j in variables:
                 #datapoints[i].append(dataEntry[i]["values"].get(j)) ## previous
                 if j + " predicted" != predictionFeature:
-                    datapoints[i].append(dataEntry[i]["values"].get(j)) ## hack # new 21/06/16
+                    datapoints[i].append(dataEntry[i]["values"].get(j)) ## FOR INTERNAL USAGE ONLY hack # new 21/06/16
 
     except(ValueError, KeyError, TypeError):
         print "Error: Please check JSON syntax... \n"
 
-    return variables, datapoints, predictionFeature, rawModel, readAcrossURIs # new 21/06/16
+    return variables, datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures # new 21/06/16
 
 """
 def getJsonContentsRA (jsonInput):
@@ -488,13 +489,14 @@ def create_task_readacross_train():
 def create_task_readacross_test():
 
     if not request.environ['body_copy']:
+        #print "fail"
         abort(500)
 
     readThis = json.loads(request.environ['body_copy'])
 
 
-    #return variables, datapoints, predictionFeature, rawModel, readAcrossURIs # new 21/06/16
-    variables, read_across_datapoints, predictionFeature, rawModel, readAcrossURIs  = getJsonTestRA(readThis)
+    #return variables, datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures # new 21/06/16
+    variables, read_across_datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures  = getJsonTestRA(readThis)
 
     #print len(readAcrossURIs), len(read_across_datapoints), len(read_across_datapoints[0])
     got_raw = base64.b64decode(rawModel) ## check
@@ -580,6 +582,17 @@ def create_task_readacross_test():
     #print ens_pred_dict
     #print ens_appl_dict
 
+    predictionList = []
+    for i in range (len(readAcrossURIs)):
+        predictionList.append({predictedFeatures[0]: eucl_predictions[i][1], 
+                                predictedFeatures[1]: manh_predictions[i][1], 
+                                predictedFeatures[2]: ens_predictions[i][1], 
+                                predictedFeatures[3]: eucl_applicability[i][1], 
+                                predictedFeatures[4]: manh_applicability[i][1],
+                                predictedFeatures[5]:ens_applicability[i][1]})
+
+    ### values only (list format)
+    """
     eu_p = []
     ma_p = []
     en_p = []
@@ -595,16 +608,25 @@ def create_task_readacross_test():
         ma_a.append(manh_applicability[i][1])
         en_a.append(ens_applicability[i][1])
 
-    #"""
+    """
     task = {
-        "predictionsEuclidean": eu_p,
-        "predictionsManhattan": ma_p,
-        "predictionsEnsemble": en_p,
-        "confidenceEuclidean": eu_a,
-        "confidenceManhattan": ma_a,
-        "confidenceEnsemble": en_a
+        "predictions": predictionList
         }
 
+
+    ## template
+    """
+    {
+    "predictions":[
+        {
+           "hampos predicted": 1
+        },
+        {
+           "hampos predicted": 2
+        }
+      ]
+    }
+    """
     #xxx = open("C:/Python27/RApredict_delete.txt", "w")
     #xxx.writelines(str(task))
     #xxx.close 
