@@ -83,13 +83,14 @@ def getJsonTestRA (jsonInput):
     try:
         dataset = jsonInput["dataset"]
         rawModel = jsonInput["rawModel"]
-        additionalInfo = jsonInput["additionalInfo"]
-        predictedFeatures = jsonInput["predictedFeatures"]
-        print predictedFeatures
+        #additionalInfo = jsonInput["additionalInfo"]
+        predictedFeatures = jsonInput["additionalInfo"]
+        #print predictedFeatures
         datasetURI = dataset.get("datasetURI", None)
         dataEntry = dataset.get("dataEntry", None)
 
-        predictionFeature = additionalInfo[0].get("predictedFeature", None)
+        # for internal testing
+        predictionFeature "" #= additionalInfo[0].get("predictedFeature", None)
 
         variables = dataEntry[0]["values"].keys() 
         variables.sort() 
@@ -464,6 +465,7 @@ def create_task_readacross_train():
     predictedString6 = predictionFeature + " Confidence Ensemble"
 
     # new 21/06/16 # check -> some is only for internal usage
+    """
     task = {
         "rawModel": encoded,
         "pmmlModel": "", 
@@ -473,7 +475,16 @@ def create_task_readacross_train():
             predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6  
             ] 
         }
-
+    """
+    task = {
+        "rawModel": encoded,
+        "pmmlModel": "", 
+        "additionalInfo" : [predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6], 
+        "independentFeatures": variables, 
+        "predictedFeatures": [
+            predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6  
+            ] 
+        }
     #xxx = open("C:/Python27/RA_train_Delete.txt", "w")
     #xxx.writelines(str(task))
     #xxx.close 
