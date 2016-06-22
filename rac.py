@@ -83,14 +83,14 @@ def getJsonTestRA (jsonInput):
     try:
         dataset = jsonInput["dataset"]
         rawModel = jsonInput["rawModel"]
-        #additionalInfo = jsonInput["additionalInfo"]
-        predictedFeatures = jsonInput["additionalInfo"]
+        additionalInfo = jsonInput["additionalInfo"]
         #print predictedFeatures
         datasetURI = dataset.get("datasetURI", None)
         dataEntry = dataset.get("dataEntry", None)
 
         # for internal testing
-        predictionFeature "" #= additionalInfo[0].get("predictedFeature", None)
+        predictionFeature "" 
+        predictedFeatures = additionalInfo[0].get("predictedFeatures", None)
 
         variables = dataEntry[0]["values"].keys() 
         variables.sort() 
@@ -479,7 +479,7 @@ def create_task_readacross_train():
     task = {
         "rawModel": encoded,
         "pmmlModel": "", 
-        "additionalInfo" : [predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6], 
+        "additionalInfo" : [{'predictedFeatures': [predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6]}], 
         "independentFeatures": variables, 
         "predictedFeatures": [
             predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6  
