@@ -452,14 +452,25 @@ def create_task_readacross_train():
 
     encoded = base64.b64encode(str(taskDic))
 
-    predictedString = predictionFeature + " predicted"
+    #predictedString = predictionFeature + " predicted" ## removed # temp # 'new' 21/06/16
 
+    # new 21/06/16
+    predictedString1 = predictionFeature + " Euclidean"
+    predictedString2 = predictionFeature + " Manhattan"
+    predictedString3 = predictionFeature + " Ensemble"
+    predictedString4 = predictionFeature + " Confidence Euclidean"
+    predictedString5 = predictionFeature + " Confidence Manhattan"
+    predictedString6 = predictionFeature + " Confidence Ensemble"
+
+    # new 21/06/16 # check -> some is only for internal usage
     task = {
         "rawModel": encoded,
         "pmmlModel": "", 
-        "additionalInfo" : [{'predictedFeature': predictedString}], 
+        "additionalInfo" : [{'predictedFeature': predictionFeature + " predicted"}], 
         "independentFeatures": variables, 
-        "predictedFeatures": [predictedString] 
+        "predictedFeatures": [
+            predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6  
+            ] 
         }
 
     #xxx = open("C:/Python27/RA_train_Delete.txt", "w")
@@ -569,8 +580,29 @@ def create_task_readacross_test():
     #print ens_pred_dict
     #print ens_appl_dict
 
+    eu_p = []
+    ma_p = []
+    en_p = []
+    eu_a = []
+    ma_a = []
+    en_a = []
+
+    for i in range (len(eucl_predictions)):
+        eu_p.append(eucl_predictions[i][1])
+        ma_p.append(manh_predictions[i][1])
+        en_p.append(ens_predictions[i][1])
+        eu_a.append(eucl_applicability[i][1])
+        ma_a.append(manh_applicability[i][1])
+        en_a.append(ens_applicability[i][1])
+
     #"""
     task = {
+        "predictionsEuclidean": eu_p,
+        "predictionsManhattan": ma_p,
+        "predictionsEnsemble": en_p,
+        "confidenceEuclidean": eu_a,
+        "confidenceManhattan": ma_a,
+        "confidenceEnsemble": en_a
         }
 
     #xxx = open("C:/Python27/RApredict_delete.txt", "w")
