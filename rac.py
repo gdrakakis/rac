@@ -89,7 +89,7 @@ def getJsonTestRA (jsonInput):
         dataEntry = dataset.get("dataEntry", None)
 
         # for internal testing
-        predictionFeature = "" 
+        predictionFeature = "" #jsonInput["predictionFeature"]
         predictedFeatures = additionalInfo[0].get("predictedFeatures", None)
 
         variables = dataEntry[0]["values"].keys() 
@@ -405,7 +405,7 @@ def RA_predict(euclidean, manhattan, ensemble, name, predictionFeature, nano2val
 """
     Pseudo AD
 """
-def RA_applicability(euclidean, manhattan, ensemble, name):
+def RA_applicability(euclidean, manhattan, ensemble, name): # FIX this to accept cut-offs
     eu_score = 0
     ma_score = 0
     en_score = 0
@@ -457,12 +457,12 @@ def create_task_readacross_train():
     #predictedString = predictionFeature + " predicted" ## removed # temp # 'new' 21/06/16
 
     # new 21/06/16
-    predictedString1 = predictionFeature + " Euclidean"
-    predictedString2 = predictionFeature + " Manhattan"
-    predictedString3 = predictionFeature + " Ensemble"
-    predictedString4 = predictionFeature + " Confidence Euclidean"
-    predictedString5 = predictionFeature + " Confidence Manhattan"
-    predictedString6 = predictionFeature + " Confidence Ensemble"
+    predictedString1 = predictionFeature + "\sEuclidean" # fix this to accept names
+    predictedString2 = predictionFeature + "\sManhattan"
+    predictedString3 = predictionFeature + "\sEnsemble"
+    predictedString4 = predictionFeature + "\sConfidence\sEuclidean"
+    predictedString5 = predictionFeature + "\sConfidence\sManhattan"
+    predictedString6 = predictionFeature + "\sConfidence\sEnsemble"
 
     # new 21/06/16 # check -> some is only for internal usage
     """
@@ -595,12 +595,12 @@ def create_task_readacross_test():
 
     predictionList = []
     for i in range (len(readAcrossURIs)):
-        predictionList.append({predictedFeatures[0]: eucl_predictions[i][1], 
+        predictionList.append({ predictedFeatures[0]: eucl_predictions[i][1], 
                                 predictedFeatures[1]: manh_predictions[i][1], 
                                 predictedFeatures[2]: ens_predictions[i][1], 
                                 predictedFeatures[3]: eucl_applicability[i][1], 
                                 predictedFeatures[4]: manh_applicability[i][1],
-                                predictedFeatures[5]:ens_applicability[i][1]})
+                                predictedFeatures[5]: ens_applicability[i][1] })
 
     ### values only (list format)
     """
@@ -696,6 +696,6 @@ if __name__ == '__main__':
     app.wsgi_app = WSGICopyBody(app.wsgi_app) ##
     app.run(host="0.0.0.0", port = 5000, debug = True)	
 # curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractrain.json http://localhost:5000/pws/readacross/train
-# curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractest.json http://localhost:5000/pws/readacross/test
+# curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractest2.json http://localhost:5000/pws/readacross/test
 # C:\Python27\Flask-0.10.1\python-api 
 # C:/Python27/python rac.py
