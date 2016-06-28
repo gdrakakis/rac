@@ -186,7 +186,7 @@ def byteify(input):
 def mat2dicNN(matrix, name):
     myDict = {}
     for i in range (len (matrix[0])):
-        myDict[name + " NN_" + str(i+1)] = [matrix[0][i], matrix[1][i]]
+        myDict[name + " 's NN_" + str(i+1)] = [matrix[0][i], matrix[1][i]]
     return byteify(myDict)
 
 """
@@ -221,7 +221,7 @@ def manual_norm(myTable, myMax, myMin):
 """
     Distances
 """
-def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, nanoparticles):
+def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, nanoparticles, threshold):
 
     datapoints_transposed = map(list, zip(*datapoints)) 
     RA_datapoints_transposed = map(list, zip(*read_across_datapoints)) 
@@ -289,7 +289,10 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
         #print "\n HERE \n ", eucl_sorted[i]
         #eucl_dict.append(mat2dicNN(eucl_sorted[i], readAcrossURIs[i])) #
         for j in range (len (eucl_sorted[i][0])):
-            eucl_dict[readAcrossURIs[i] + " NN_" + str(j+1)] = [eucl_sorted[i][0][j], eucl_sorted[i][1][j]]
+            if eucl_sorted[i][1][j] < threshold:
+                eucl_dict[readAcrossURIs[i] + " NP's NN No." + str(j+1)] = [eucl_sorted[i][0][j], eucl_sorted[i][1][j]]
+            else:
+                break
     eucl_dict = byteify(eucl_dict)
     #print "\n\nDict\n\n",eucl_dict
 
@@ -317,7 +320,10 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
     for i in range (len(readAcrossURIs)):
         #manh_dict.append(mat2dicNN(manh_sorted[i], readAcrossURIs[i]))
         for j in range (len (manh_sorted[i][0])):
-            manh_dict[readAcrossURIs[i] + " NN_" + str(j+1)] = [manh_sorted[i][0][j], manh_sorted[i][1][j]]
+            if manh_sorted[i][1][j] < threshold:
+                manh_dict[readAcrossURIs[i] + " NP's NN No." + str(j+1)] = [manh_sorted[i][0][j], manh_sorted[i][1][j]]
+            else: 
+                break
     manh_dict = byteify(manh_dict)
 
     ensemble_dist = (eucl_dist + manh_dist)/2
@@ -341,10 +347,13 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
     for i in range (len(readAcrossURIs)):
         #ens_dict.append(mat2dicNN(ens_sorted[i], readAcrossURIs[i]))
         for j in range (len (ens_sorted[i][0])):
-            ens_dict[readAcrossURIs[i] + " NN_" + str(j+1)] = [ens_sorted[i][0][j], ens_sorted[i][1][j]]
+            if ens_sorted[i][1][j] < threshold:
+                ens_dict[readAcrossURIs[i] + " NP's NN No." + str(j+1)] = [ens_sorted[i][0][j], ens_sorted[i][1][j]]
+            else:
+                break
     ens_dict = byteify(ens_dict)
 
-    """
+    #"""
     ### PLOT PCA
     pcafig = plt.figure()
     ax = pcafig.add_subplot(111, projection='3d')
@@ -364,20 +373,21 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
 
     #plt.tight_layout()
-    plt.show() #HIDE show on production
+    #plt.show() #HIDE show on production
 
     figfile = BytesIO()
     pcafig.savefig(figfile, dpi=300, format='png', bbox_inches='tight') #bbox_inches='tight'
     figfile.seek(0) 
     pcafig_encoded = base64.b64encode(figfile.getvalue())    
-    """
+    #"""
     #return 0,0,0,0,0,0,0 ## , ""
-    return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict # , pcafig_encoded# new 21/06/16
+    #return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict # , pcafig_encoded# new 21/06/16
+    return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded 
 
 """
     Prediction function
 """
-def RA_predict(euclidean, manhattan, ensemble, name, predictionFeature, nano2value):
+def RA_predict(euclidean, manhattan, ensemble, name, predictionFeature, nano2value, threshold): ##
     eu_score = 0
     ma_score = 0
     en_score = 0
@@ -387,40 +397,77 @@ def RA_predict(euclidean, manhattan, ensemble, name, predictionFeature, nano2val
     en_div = 0
 
     for i in range (len(euclidean[0])):
-        if euclidean[1][i] < 1:
+        if euclidean[1][i] < threshold: #27/06/16 - was < 1:
             eu_score += (1 - euclidean[1][i])*(nano2value[euclidean[0][i]]) #just the name
             eu_div += 1 - euclidean[1][i]
-        if manhattan[1][i] < 1:
+        if manhattan[1][i] < threshold: #27/06/16 - was < 1:
             ma_score += (1 - manhattan[1][i])*(nano2value[euclidean[0][i]]) #just the name
             ma_div += 1 - manhattan[1][i]
-        if ensemble[1][i] < 1:
+            #print manhattan[1][i], threshold, i
+        if ensemble[1][i] < threshold: #27/06/16 - was < 1:
             en_score += (1 - ensemble[1][i])*(nano2value[euclidean[0][i]]) #just the name
             en_div += 1 - ensemble[1][i]
-    eu_score = eu_score/eu_div
-    ma_score = ma_score/ma_div
-    en_score = en_score/en_div
+    if eu_div == 0:
+        eu_score = 0
+    else: 
+        eu_score = eu_score/eu_div
+
+    if ma_div == 0:
+        ma_score = 0
+    else: 
+        ma_score = ma_score/ma_div
+
+    if en_div == 0:
+        en_score = 0
+    else: 
+        en_score = en_score/en_div
+    
+    
     #print eu_score
     return [name, round(eu_score,2)], [name, round(ma_score,2)], [name, round(en_score,2)]
 
 """
     Pseudo AD
 """
-def RA_applicability(euclidean, manhattan, ensemble, name): # FIX this to accept cut-offs
+def RA_applicability(euclidean, manhattan, ensemble, name, threshold): # FIX this to accept cut-offs -DONE
     eu_score = 0
     ma_score = 0
     en_score = 0
-    for i in range (len(euclidean[1])): # list of vals
-        if euclidean[1][i] < 0.4:
-            eu_score +=1
-        if manhattan[1][i] < 0.33:
-            ma_score +=1
-        if ensemble[1][i] < 0.36:
-            en_score +=1
-    eu_score = eu_score/len(euclidean[1])
-    ma_score = ma_score/len(euclidean[1])
-    en_score = en_score/len(euclidean[1])
+    eu_div = 0
+    ma_div = 0
+    en_div = 0
 
-    return [name, eu_score], [name, ma_score], [name, en_score]
+    for i in range (len(euclidean[1])): # list of vals
+        if euclidean[1][i] < threshold: # 0.4:
+            eu_score +=1 - euclidean[1][i] #1
+            eu_div += 1 #- threshold
+        if manhattan[1][i] < threshold: # 0.33:
+            ma_score += 1 - manhattan[1][i] #1
+            ma_div += 1 #- threshold
+        if ensemble[1][i] < threshold: # 0.36:
+            en_score +=1 - ensemble[1][i] #1
+            en_div += 1 #- threshold
+
+    #eu_score = eu_score/eu_div #len(euclidean[1])
+    #ma_score = ma_score/ma_div #len(euclidean[1])
+    #en_score = en_score/en_div #len(euclidean[1])
+    #print "\n\n\n", eu_score, "\n\n\n"
+    if eu_div == 0:
+        eu_score = 0
+    else: 
+        eu_score = eu_score/eu_div
+
+    if ma_div == 0:
+        ma_score = 0
+    else: 
+        ma_score = ma_score/ma_div
+
+    if en_div == 0:
+        en_score = 0
+    else: 
+        en_score = en_score/en_div
+
+    return [name, round(eu_score,2)], [name, round(ma_score,2)], [name, round(en_score,2)]
     
 """
     tasks
@@ -437,10 +484,13 @@ def create_task_readacross_train():
     variables, datapoints, predictionFeature, target_variable_values, parameters, substances  = getJsonTrainRA(readThis)
     
     # Parameters: euclidean, manhattan, ensemble (0-1) and confidence (0 or 1)
-    euclidean = parameters.get("euclidean", 0.4)
-    manhattan = parameters.get("manhattan", 0.33)
-    ensemble = parameters.get("ensemble", 0.36)
-    confidence = parameters.get("confidence", 1)
+    #euclidean = parameters.get("euclidean", 0.4)
+    #manhattan = parameters.get("manhattan", 0.33)
+    #ensemble = parameters.get("ensemble", 0.36)
+    #confidence = parameters.get("confidence", 1)
+    distance = parameters.get("distance", "euclidean")
+    threshold = parameters.get("threshold", 0.4)
+    confidence = parameters.get("confidence", 0)
 
     taskDic = {}
     #taskDic["variables"] = variables # sent separately
@@ -448,21 +498,28 @@ def create_task_readacross_train():
     taskDic["datapoints"] = datapoints
     taskDic["predictionFeature"] = predictionFeature
     taskDic["target_variable_values"] = target_variable_values
-    taskDic["euclidean"] = euclidean
-    taskDic["manhattan"] = manhattan
-    taskDic["ensemble"] = ensemble
+    #taskDic["euclidean"] = euclidean
+    #taskDic["manhattan"] = manhattan
+    #taskDic["ensemble"] = ensemble
+    taskDic["distance"] = distance
+    taskDic["confidence"] = confidence
+    taskDic["threshold"] = threshold
 
     encoded = base64.b64encode(str(taskDic))
 
     #predictedString = predictionFeature + " predicted" ## removed # temp # 'new' 21/06/16
 
     # new 21/06/16
+    """
     predictedString1 = predictionFeature + "\sEuclidean" # fix this to accept names
     predictedString2 = predictionFeature + "\sManhattan"
     predictedString3 = predictionFeature + "\sEnsemble"
     predictedString4 = predictionFeature + "\sConfidence\sEuclidean"
     predictedString5 = predictionFeature + "\sConfidence\sManhattan"
     predictedString6 = predictionFeature + "\sConfidence\sEnsemble"
+    """
+    predictedString1 = predictionFeature + " " + distance # fix this to accept names
+    predictedString2 = predictionFeature + " " + "confidence"
 
     # new 21/06/16 # check -> some is only for internal usage
     """
@@ -475,7 +532,6 @@ def create_task_readacross_train():
             predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6  
             ] 
         }
-    """
     task = {
         "rawModel": encoded,
         "pmmlModel": "", 
@@ -485,6 +541,28 @@ def create_task_readacross_train():
             predictedString1, predictedString2, predictedString3, predictedString4, predictedString5, predictedString6  
             ] 
         }
+    """
+    if confidence == 1:
+        task = {
+            "rawModel": encoded,
+            "pmmlModel": "", 
+            "additionalInfo" : [{'predictedFeatures': [predictedString1, predictedString2]}], 
+            "independentFeatures": variables, 
+            "predictedFeatures": [
+                predictedString1, predictedString2  
+                ] 
+            }
+    else:
+        task = {
+            "rawModel": encoded,
+            "pmmlModel": "", 
+            "additionalInfo" : [{'predictedFeatures': [predictedString1]}], 
+            "independentFeatures": variables, 
+            "predictedFeatures": [
+                predictedString1  
+                ] 
+            }
+    ## DEBUG
     #xxx = open("C:/Python27/RA_train_Delete.txt", "w")
     #xxx.writelines(str(task))
     #xxx.close 
@@ -500,41 +578,47 @@ def create_task_readacross_train():
 def create_task_readacross_test():
 
     if not request.environ['body_copy']:
-        #print "fail"
         abort(500)
 
     readThis = json.loads(request.environ['body_copy'])
 
-
-    #return variables, datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures # new 21/06/16
     variables, read_across_datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures  = getJsonTestRA(readThis)
 
-    #print len(readAcrossURIs), len(read_across_datapoints), len(read_across_datapoints[0])
-    got_raw = base64.b64decode(rawModel) ## check
-    decoded = ast.literal_eval(got_raw) ## check
+    got_raw = base64.b64decode(rawModel) 
+    decoded = ast.literal_eval(got_raw) 
 
     datapoints = decoded["datapoints"] 
     substances = decoded["substances"] 
     predictionFeature = decoded["predictionFeature"] 
     target_variable_values = decoded["target_variable_values"]  
-    euclidean = decoded["euclidean"] 
-    manhattan = decoded["manhattan"] 
-    ensemble = decoded["ensemble"] 
 
-    #print len(substances), len(datapoints), len(datapoints[0])
-    #print predictionFeature, len (target_variable_values)
-    #print euclidean, manhattan, ensemble
+    distance = decoded["distance"] 
+    threshold = decoded["threshold"] 
+    confidence = decoded["confidence"] 
 
+    ### test threshold manually
+    #threshold = 0.1
+    #threshold = 1
+
+    euclidean = threshold
+    manhattan = threshold
+    ensemble = threshold 
+
+    ### Leave in (in case we allow multiple distance metrics)
+    #euclidean = decoded["euclidean"] 
+    #manhattan = decoded["manhattan"] 
+    #ensemble = decoded["ensemble"] 
+
+    ### test confidence manually
+    #confidence = 0
+    #confidence = 1
 
     nano2value = {}
     for i in range (len(substances)):
         nano2value[substances[i]] = target_variable_values[i]
-    # included IDs # new 21/06/16
-    # removed PCA  # new 21/06/16
-    #eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances)
-    eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances)
-    
-    #print len (eucl_sorted), len(manh_sorted), len(ens_sorted)
+    #eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances)
+    eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances, threshold)
+
     #"""
     eucl_predictions = []
     manh_predictions = [] 
@@ -544,45 +628,37 @@ def create_task_readacross_test():
     manh_applicability = [] 
     ens_applicability = []
     for i in range (len(readAcrossURIs)):
-        eu,ma,en = RA_predict(eucl_sorted[i], manh_sorted[i], ens_sorted[i], readAcrossURIs[i], predictionFeature, nano2value)
+        eu,ma,en = RA_predict(eucl_sorted[i], manh_sorted[i], ens_sorted[i], readAcrossURIs[i], predictionFeature, nano2value, threshold)
         eucl_predictions.append(eu)
         manh_predictions.append(ma)
         ens_predictions.append(en)
         
-        eu,ma,en = RA_applicability(eucl_sorted[i], manh_sorted[i], ens_sorted[i], readAcrossURIs[i])
+        eu,ma,en = RA_applicability(eucl_sorted[i], manh_sorted[i], ens_sorted[i], readAcrossURIs[i], threshold)
         eucl_applicability.append(eu)
         manh_applicability.append(ma)
         ens_applicability.append(en)
-    #print ens_predictions # works 21/06/16
     #"""
+
     if len (eucl_predictions) > 1:
         # predictions
         eucl_predictions_transposed = map(list, zip(*eucl_predictions)) 
-        #print "\n\n\n", eucl_predictions,"\n\n\n"
-        #print "\n\n\n", eucl_predictions_transposed,"\n\n\n"
         eucl_pred_dict = mat2dic(eucl_predictions_transposed) # Checked: Changed mat2dic # new 21/06/16
-        #eucl_pred_dict = mat2dic(eucl_predictions) # curr
 
         manh_predictions_transposed = map(list, zip(*manh_predictions)) 
         manh_pred_dict = mat2dic(manh_predictions_transposed)
-        #print manh_pred_dict
 
         ens_predictions_transposed = map(list, zip(*ens_predictions)) 
         ens_pred_dict = mat2dic(ens_predictions_transposed)
-        #print ens_pred_dict
 
         # applicability
         eucl_applicability_transposed = map(list, zip(*eucl_applicability)) 
         eucl_appl_dict = mat2dic(eucl_applicability_transposed)
-        #print eucl_appl_dict
 
         manh_applicability_transposed = map(list, zip(*manh_applicability)) 
         manh_appl_dict = mat2dic(manh_applicability_transposed)
-        #print manh_appl_dict
 
         ens_applicability_transposed = map(list, zip(*ens_applicability)) 
         ens_appl_dict = mat2dic(ens_applicability_transposed)
-        #print ens_appl_dict
     else: 
         eucl_pred_dict = mat2dicSingle(eucl_predictions[0])
         manh_pred_dict = mat2dicSingle(manh_predictions[0])
@@ -590,10 +666,37 @@ def create_task_readacross_test():
         eucl_appl_dict = mat2dicSingle(eucl_applicability[0])
         manh_appl_dict = mat2dicSingle(manh_applicability[0])
         ens_appl_dict = mat2dicSingle(ens_applicability[0])
-    #print ens_pred_dict
-    #print ens_appl_dict
+
 
     predictionList = []
+    # check if parameters are capitalised!! 
+    if distance == "euclidean":
+        if confidence == 1:
+            for i in range (len(readAcrossURIs)):
+                predictionList.append({ predictedFeatures[0]: eucl_predictions[i][1], 
+                                        predictedFeatures[1]: eucl_applicability[i][1]})
+        else:
+            for i in range (len(readAcrossURIs)):
+                predictionList.append({ predictedFeatures[0]: eucl_predictions[i][1]})
+    elif distance == "manhattan":
+        if confidence == 1:
+            for i in range (len(readAcrossURIs)):
+                predictionList.append({ predictedFeatures[0]: manh_predictions[i][1], 
+                                        predictedFeatures[1]: manh_applicability[i][1]})
+        else:
+            for i in range (len(readAcrossURIs)):
+                predictionList.append({ predictedFeatures[0]: manh_predictions[i][1]})
+    else:
+        if confidence == 1:
+            for i in range (len(readAcrossURIs)):
+                predictionList.append({ predictedFeatures[0]: ens_predictions[i][1], 
+                                        predictedFeatures[1]: ens_applicability[i][1]})
+        else:
+            for i in range (len(readAcrossURIs)):
+                predictionList.append({ predictedFeatures[0]: ens_predictions[i][1]})
+
+    ### Leave in (in case we end up supporting multiple)
+    """
     for i in range (len(readAcrossURIs)):
         predictionList.append({ predictedFeatures[0]: eucl_predictions[i][1], 
                                 predictedFeatures[1]: manh_predictions[i][1], 
@@ -601,53 +704,204 @@ def create_task_readacross_test():
                                 predictedFeatures[3]: eucl_applicability[i][1], 
                                 predictedFeatures[4]: manh_applicability[i][1],
                                 predictedFeatures[5]: ens_applicability[i][1] })
-
-    ### values only (list format)
     """
-    eu_p = []
-    ma_p = []
-    en_p = []
-    eu_a = []
-    ma_a = []
-    en_a = []
 
-    for i in range (len(eucl_predictions)):
-        eu_p.append(eucl_predictions[i][1])
-        ma_p.append(manh_predictions[i][1])
-        en_p.append(ens_predictions[i][1])
-        eu_a.append(eucl_applicability[i][1])
-        ma_a.append(manh_applicability[i][1])
-        en_a.append(ens_applicability[i][1])
-
-    """
     task = {
         "predictions": predictionList
         }
 
-
-    ## template
-    """
-    {
-    "predictions":[
-        {
-           "hampos predicted": 1
-        },
-        {
-           "hampos predicted": 2
-        }
-      ]
-    }
-    """
+    ### DEBUG
     #xxx = open("C:/Python27/RApredict_delete.txt", "w")
     #xxx.writelines(str(task))
     #xxx.close 
+
     #task = {}
+
+    jsonOutput = jsonify( task )
+    
+    return jsonOutput, 201 
+
+	
+"""
+    prediction
+"""
+@app.route('/pws/readacross/report', methods = ['POST'])
+def create_task_readacross_report():
+
+    if not request.environ['body_copy']:
+        abort(500)
+
+    readThis = json.loads(request.environ['body_copy'])
+
+    variables, read_across_datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures  = getJsonTestRA(readThis)
+
+    got_raw = base64.b64decode(rawModel) 
+    decoded = ast.literal_eval(got_raw) 
+
+    datapoints = decoded["datapoints"] 
+    substances = decoded["substances"] 
+    predictionFeature = decoded["predictionFeature"] 
+    target_variable_values = decoded["target_variable_values"]  
+
+    distance = decoded["distance"] 
+    threshold = decoded["threshold"] 
+    confidence = decoded["confidence"] 
+
+    ### test threshold manually
+    #threshold = 0.1
+    #threshold = 1
+
+    euclidean = threshold
+    manhattan = threshold
+    ensemble = threshold 
+
+    ### Leave in (in case we allow multiple distance metrics)
+    #euclidean = decoded["euclidean"] 
+    #manhattan = decoded["manhattan"] 
+    #ensemble = decoded["ensemble"] 
+
+    ### test confidence manually
+    #confidence = 0
+    #confidence = 1
+
+    nano2value = {}
+    for i in range (len(substances)):
+        nano2value[substances[i]] = target_variable_values[i]
+    eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded  = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances, threshold)
+    
+    #"""
+    eucl_predictions = []
+    manh_predictions = [] 
+    ens_predictions = []
+
+    eucl_applicability = []
+    manh_applicability = [] 
+    ens_applicability = []
+    for i in range (len(readAcrossURIs)):
+        eu,ma,en = RA_predict(eucl_sorted[i], manh_sorted[i], ens_sorted[i], readAcrossURIs[i], predictionFeature, nano2value, threshold)
+        eucl_predictions.append(eu)
+        manh_predictions.append(ma)
+        ens_predictions.append(en)
+        
+        eu,ma,en = RA_applicability(eucl_sorted[i], manh_sorted[i], ens_sorted[i], readAcrossURIs[i], threshold)
+        eucl_applicability.append(eu)
+        manh_applicability.append(ma)
+        ens_applicability.append(en)
+    #"""
+
+    if len (eucl_predictions) > 1:
+        # predictions
+        eucl_predictions_transposed = map(list, zip(*eucl_predictions)) 
+        eucl_pred_dict = mat2dic(eucl_predictions_transposed) # Checked: Changed mat2dic # new 21/06/16
+
+        manh_predictions_transposed = map(list, zip(*manh_predictions)) 
+        manh_pred_dict = mat2dic(manh_predictions_transposed)
+
+        ens_predictions_transposed = map(list, zip(*ens_predictions)) 
+        ens_pred_dict = mat2dic(ens_predictions_transposed)
+
+        # applicability
+        eucl_applicability_transposed = map(list, zip(*eucl_applicability)) 
+        eucl_appl_dict = mat2dic(eucl_applicability_transposed)
+
+        manh_applicability_transposed = map(list, zip(*manh_applicability)) 
+        manh_appl_dict = mat2dic(manh_applicability_transposed)
+
+        ens_applicability_transposed = map(list, zip(*ens_applicability)) 
+        ens_appl_dict = mat2dic(ens_applicability_transposed)
+    else: 
+        eucl_pred_dict = mat2dicSingle(eucl_predictions[0])
+        manh_pred_dict = mat2dicSingle(manh_predictions[0])
+        ens_pred_dict = mat2dicSingle(ens_predictions[0])
+        eucl_appl_dict = mat2dicSingle(eucl_applicability[0])
+        manh_appl_dict = mat2dicSingle(manh_applicability[0])
+        ens_appl_dict = mat2dicSingle(ens_applicability[0])
+
+
+    predictionList = []
+    # check if parameters are capitalised!! 
+    pred_dict = {}
+    appl_dict = {} 
+    nn_dict = {}
+    if confidence == 1:
+        if distance == "euclidean":
+            pred_dict = eucl_pred_dict
+            nn_dict = eucl_dict
+            appl_dict = eucl_appl_dict
+        elif distance == "manhattan":
+            pred_dict = manh_pred_dict
+            nn_dict = manh_dict
+            appl_dict = manh_appl_dict
+        else:
+            pred_dict = ens_pred_dict
+            nn_dict = ens_dict
+            appl_dict = ens_appl_dict
+        task = {
+                "singleCalculations": {
+                                       distance + " Cut-off" : threshold
+                                      },
+                "arrayCalculations": {
+                                       "Predictions based on " + distance + " Distances":
+                                           {"colNames": ["Nanoparticle", "Prediction"],
+                                            "values": pred_dict
+                                           },
+                                       "Applicability Domain for " + distance + "Distances":
+                                           {"colNames": ["Nanoparticle", "AD Value"],
+                                            "values": appl_dict
+                                           },
+                                       "Nearest Neighbour based on " + distance + " Distances":
+                                           {"colNames": ["Nanoparticle", "Distance"],
+                                            "values": nn_dict
+                                           }
+                                     },
+                "figures": {
+                           "PCA of datapoints vs. Read-Across" : pcafig_encoded
+                           }
+            }
+    else:
+        if distance == "euclidean":
+            pred_dict = eucl_pred_dict
+            nn_dict = eucl_dict
+        elif distance == "manhattan":
+            pred_dict = manh_pred_dict
+            nn_dict = manh_dict
+        else:
+            pred_dict = ens_pred_dict
+            nn_dict = ens_dict
+        task = {
+                "singleCalculations": {
+                                       distance + " Cut-off" : threshold
+                                      },
+                "arrayCalculations": {
+                                       "Predictions based on " + distance + " Distances":
+                                           {"colNames": ["Nanoparticle", "Prediction"],
+                                            "values": pred_dict
+                                           },
+                                       "Nearest Neighbour based on " + distance + " Distances":
+                                           {"colNames": ["Nanoparticle", "Distance"],
+                                            "values": nn_dict
+                                           }
+                                     },
+                "figures": {
+                           "PCA of datapoints vs. Read-Across" : pcafig_encoded
+                           }
+            }
+
+    ### DEBUG
+    #xxx = open("C:/Python27/RA_report_delete.txt", "w")
+    #xxx.writelines(str(task))
+    #xxx.close 
+
+    #task = {}
+
     jsonOutput = jsonify( task )
     
     return jsonOutput, 201 
 
 ############################################################
-############################################################
+
+# Middleware for chunked input
+#from http://stackoverflow.com/questions/14146824/flask-and- transfer-encoding-chunked/21342631
 
 class WSGICopyBody(object):
     def __init__(self, application):
@@ -694,8 +948,13 @@ class WSGICopyBody(object):
 
 if __name__ == '__main__': 
     app.wsgi_app = WSGICopyBody(app.wsgi_app) ##
-    app.run(host="0.0.0.0", port = 5000, debug = True)	
-# curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractrain.json http://localhost:5000/pws/readacross/train
+    app.run(host="0.0.0.0", port = 5000, debug = True)
+
+############################################################
+
+### DEBUG (local)
+# curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractrain2.json http://localhost:5000/pws/readacross/train
 # curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractest2.json http://localhost:5000/pws/readacross/test
+# curl -i -H "Content-Type: application/json" -X POST -d @C:/Python27/Flask-0.10.1/python-api/ractest2.json http://localhost:5000/pws/readacross/report
 # C:\Python27\Flask-0.10.1\python-api 
 # C:/Python27/python rac.py
