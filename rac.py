@@ -19,7 +19,6 @@ import time
 import random
 from random import randrange
 import sklearn
-from sklearn import cross_validation
 from sklearn import metrics
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from sklearn.metrics import confusion_matrix
@@ -112,59 +111,6 @@ def getJsonTestRA (jsonInput):
 
     return variables, datapoints, predictionFeature, rawModel, readAcrossURIs, predictedFeatures # new 21/06/16
 
-"""
-def getJsonContentsRA (jsonInput):
-    try:
-        dataset = jsonInput["dataset"]
-        predictionFeature = jsonInput["predictionFeature"]
-        parameters = jsonInput["parameters"]
-
-        datasetURI = dataset.get("datasetURI", None)
-        dataEntry = dataset.get("dataEntry", None)
-        readAcrossURIs = parameters.get("readAcrossURIs", None) # nanoparticles for readAcross
-
-        variables = dataEntry[0]["values"].keys() 
-        variables.sort()  # NP features including predictionFeature
-
-        datapoints =[] # list of nanoparticle feature vectors not for readacross
-        read_across_datapoints = [] #list of readacross nanoparticle feature vectors
-
-        nanoparticles=[] # nanoparticles not in readAcrossURIs list
-        target_variable_values = [] # predictionFeature values
-
-        for i in range(len(dataEntry)-len(readAcrossURIs)):
-            datapoints.append([])
-
-        for i in range(len(readAcrossURIs)):
-            read_across_datapoints.append([])
-
-
-        counter = 0
-        RAcounter = 0
-        for i in range(len(dataEntry)):
-
-            if dataEntry[i]["compound"].get("URI") not in readAcrossURIs:
-                nanoparticles.append(dataEntry[i]["compound"].get("URI"))
-                for j in variables:
-                    if j == predictionFeature:
-                        target_variable_values.append(dataEntry[i]["values"].get(j))
-                    else:
-                        datapoints[counter].append(dataEntry[i]["values"].get(j))
-                counter+=1
-            else:
-                for j in variables:
-                    if j != predictionFeature:
-                        read_across_datapoints[RAcounter].append(dataEntry[i]["values"].get(j))
-                RAcounter+=1
-
-        variables.remove(predictionFeature) # NP features
-
-    except(ValueError, KeyError, TypeError):
-        print "Error: Please check JSON syntax... \n"
-    #print len(nanoparticles), len(read_across_datapoints)
-    #print readAcrossURIs, read_across_datapoints
-    return variables, datapoints, read_across_datapoints, predictionFeature, target_variable_values, byteify(readAcrossURIs), nanoparticles
-"""
 
 """
     Byte-ify or utf-8 
@@ -225,7 +171,9 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
 
     datapoints_transposed = map(list, zip(*datapoints)) 
     RA_datapoints_transposed = map(list, zip(*read_across_datapoints)) 
-    
+
+    #print "\n\n\n", RA_datapoints_transposed, "\n\n\n"
+    #print "\n\n\n WORKS FINE UNTIL HERE 1\n\n\n"
     for i in range (len(datapoints_transposed)):
         max4norm = numpy.max(datapoints_transposed[i])
         min4norm = numpy.min(datapoints_transposed[i])
@@ -235,7 +183,7 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
 
     #print RA_datapoints_transposed[0]
     #print datapoints_transposed[0]
-
+    #print "\n\n\n WORKS FINE UNTIL HERE2\n\n\n"
     term1 = []
     term2 = []
     for i in range (len(variables)):
@@ -243,7 +191,7 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
         #term2.append(numpy.max(datapoints_transposed))
         term1.append(0)
         term2.append(1)
-
+    #print "\n\n\n WORKS FINE UNTIL HERE3\n\n\n"
     #transpose back
     datapoints_norm = map(list, zip(*datapoints_transposed)) 
     RA_datapoints_norm = map(list, zip(*RA_datapoints_transposed)) 
@@ -259,16 +207,20 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
     #print len(RA_datapoints_norm), len(RA_datapoints_norm[0])
     #print len(datapoints_norm), len(datapoints_norm[0])
     #"""
-    max_eucl_dist = euclidean_distances(term1, term2)
-    eucl_dist = euclidean_distances(RA_datapoints_norm, datapoints_norm)
+
+    max_eucl_dist = euclidean_distances([term1], [term2]) ## []
+    #max_eucl_dist = euclidean_distances(term1, term2) ## []
+    #print "\n\n\n", max_eucl_dist,"\n\n\n"
+    eucl_dist = euclidean_distances(RA_datapoints_norm, datapoints_norm) ##
+    #print "\n\n\n", eucl_dist,"\n\n\n"
     eucl_dist = numpy.array(eucl_dist)
     eucl_dist = eucl_dist/max_eucl_dist
     eucl_dist = numpy.round(eucl_dist,4)
-
+    
     np_plus_eucl = []
     for i in range (len(readAcrossURIs)):
         np_plus_eucl.append([nanoparticles, eucl_dist[i]]) 
-    #print np_plus_eucl
+    #print "YOLO\n\n\n", np_plus_eucl, "\n\n\n"
 
     eucl_sorted = []
     for i in range (len(readAcrossURIs)):
@@ -278,6 +230,7 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
         np_sorted = [n for d,n in np] # np, dist
         dist_sorted = [round(d,4) for d,n in np]
         eucl_sorted.append([np_sorted, dist_sorted])
+    #print "\n\n\n WORKS FINE UNTIL HERE5\n\n\n"
     #print "\n\nSorted\n\n", eucl_sorted
     ## [ [ [names] [scores] ] [ [N] [S] ]]
     ##       00      01          10  11    
@@ -295,8 +248,8 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
                 break
     eucl_dict = byteify(eucl_dict)
     #print "\n\nDict\n\n",eucl_dict
-
-    max_manh_dist = metrics.pairwise.manhattan_distances(term1, term2)
+    #print "\n\n\n WORKS FINE UNTIL HERE5\n\n\n"
+    max_manh_dist = metrics.pairwise.manhattan_distances([term1], [term2]) ## []
     manh_dist = metrics.pairwise.manhattan_distances(RA_datapoints_norm, datapoints_norm)
     manh_dist = numpy.array(manh_dist)
     manh_dist = manh_dist/max_manh_dist
@@ -329,6 +282,8 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
     ensemble_dist = (eucl_dist + manh_dist)/2
     #print "Eucl.: ", eucl_dist, "\n Manh.: ", manh_dist,"\n Ens.: ", ensemble_dist
 
+    #print "\n\n\n WORKS FINE UNTIL HERE 97\n\n\n"
+
     np_plus_ens = []
     for i in range (len(readAcrossURIs)):
         np_plus_ens.append([nanoparticles, ensemble_dist[i]]) 
@@ -353,7 +308,7 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
                 break
     ens_dict = byteify(ens_dict)
 
-    #"""
+    """
     ### PLOT PCA
     pcafig = plt.figure()
     ax = pcafig.add_subplot(111, projection='3d')
@@ -379,10 +334,10 @@ def distances (read_across_datapoints, datapoints, variables, readAcrossURIs, na
     pcafig.savefig(figfile, dpi=300, format='png', bbox_inches='tight') #bbox_inches='tight'
     figfile.seek(0) 
     pcafig_encoded = base64.b64encode(figfile.getvalue())    
-    #"""
+    """
     #return 0,0,0,0,0,0,0 ## , ""
-    #return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict # , pcafig_encoded# new 21/06/16
-    return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded 
+    return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict # , pcafig_encoded# new 21/06/16 ->16/05/2018
+    #return eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded 
 
 """
     Prediction function
@@ -563,9 +518,11 @@ def create_task_readacross_train():
                 ] 
             }
     ## DEBUG
-    #xxx = open("C:/Python27/RA_train_Delete.txt", "w")
-    #xxx.writelines(str(task))
-    #xxx.close 
+    """
+    xxx = open("C:\Python27\Flask-0.10.1\python-api\RA_train_Delete.txt", "w")
+    xxx.writelines(str(encoded)) #or "task"
+    xxx.close 
+    """
     #task = {}
     jsonOutput = jsonify( task )
     
@@ -616,8 +573,11 @@ def create_task_readacross_test():
     nano2value = {}
     for i in range (len(substances)):
         nano2value[substances[i]] = target_variable_values[i]
-    #eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances)
-    eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances, threshold)
+    eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances, threshold) ## 16 05 2018
+    #eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances, threshold)
+
+    ## PREVIOUS 16 05 2018
+    #eucl_sorted, eucl_dict, manh_sorted, manh_dict, ens_sorted, ens_dict, pcafig_encoded = distances (read_across_datapoints, datapoints, variables, readAcrossURIs, substances, threshold)
 
     #"""
     eucl_predictions = []
@@ -723,7 +683,7 @@ def create_task_readacross_test():
 
 	
 """
-    prediction
+    Report (prediction)
 """
 @app.route('/pws/readacross/report', methods = ['POST'])
 def create_task_readacross_report():
@@ -918,37 +878,29 @@ class WSGICopyBody(object):
             if input is None:
                 return
             if environ.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
-                size = int(input.readline(),16)
-                while size > 0:
-                    temp = str(input.read(size+2)).strip()
-                    body += temp
-                    size = int(input.readline(),16)
+                while (1):
+                    temp = input.readline() ## 
+                    
+                    if not temp:
+                        break
+                    body +=temp
+            size = len(body)
         else:
             body = environ['wsgi.input'].read(length)
         environ['body_copy'] = body
         environ['wsgi.input'] = StringIO(body)
-
-        # Call the wrapped application
         app_iter = self.application(environ, 
                                     self._sr_callback(start_response))
-
-        # Return modified response
-        #print app_iter
         return app_iter
 
     def _sr_callback(self, start_response):
         def callback(status, headers, exc_info=None):
-
-            # Call upstream start_response
             start_response(status, headers, exc_info)
-        #print callback
         return callback
-
-############################################################
 
 if __name__ == '__main__': 
     app.wsgi_app = WSGICopyBody(app.wsgi_app) ##
-    app.run(host="0.0.0.0", port = 5000, debug = True)
+    app.run(host="0.0.0.0", port = 5000, debug = True)	
 
 ############################################################
 
